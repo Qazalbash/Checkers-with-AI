@@ -1,5 +1,7 @@
 from typing import Optional
 
+import numpy as np
+
 
 class Checker(object):
 
@@ -42,28 +44,27 @@ class Checker(object):
                 self.peice[(r, c)] = 'w'
 
     def draw(self) -> None:
-        k = 'r'
-        print(" ", end=" ")
+        board = np.zeros((8, 8), dtype=str)
+        for i in range(8):
+            for j in range(8):
+                board[i, j] = self.tile['r'] if (i + j) % 2 else self.tile['y']
+
+        print("     ", end="")
         for header in range(0, 7):
-            print(header, end="  ")
+            print(header, end="    ")
         print(7)
         for i in range(8):
             print(i, end=" ")
-            for j in range(7):
-                k = 'y' if (i + j) % 2 else 'r'
-                p = self.peice[(i, j)]
-                if p == 'o':
-                    p = k
+            for j in range(8):
                 if (i, j) in self.last_move:
                     p = 'h'
-                print(self.tile[p], end=" ")
-            p = self.peice[(i, 7)]
-            k = 'y' if (i + 7) % 2 else 'r'
-            if p == 'o':
-                p = k
-            if (i, 7) in self.last_move:
-                p = 'h'
-            print(self.tile[p])
+                else:
+                    p = self.peice[(i, j)]
+                if p == 'o':
+                    continue
+                board[i, j] = self.tile[p]
+
+            print(board[i])
 
     def move(self, pos: Optional[tuple[int, int]], side: str) -> None:
 
@@ -101,7 +102,6 @@ class Checker(object):
                     else:
                         break
                 self.last_move.remove(pos[i + 1])
-            print(self.last_move)
 
     def start(self) -> None:
         self.draw()
@@ -137,11 +137,11 @@ class Checker(object):
 
 b = Checker()
 
-s = [(1, 4), (0, 3)]
-for i in s:
-    b.peice[i] = 'o'
+# s = [(1, 4), (0, 3)]
+# for i in s:
+#     b.peice[i] = 'o'
 
-s = [(4, 5)]
-for i in s:
-    b.peice[i] = 'b'
+# s = [(4, 5)]
+# for i in s:
+#     b.peice[i] = 'b'
 b.start()
