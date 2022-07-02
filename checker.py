@@ -1,5 +1,7 @@
 from pprint import pprint
+from selectors import EpollSelector
 from typing import Optional
+import random
 
 
 class Checker(object):
@@ -57,34 +59,20 @@ class Checker(object):
 
             print(self.tile[p])
 
-    def check_hops(
-            self, pos: Optional[tuple[int, int]]) -> Optional[tuple[int, int]]:
-        ok = [pos[0]]
-        hops = self.normal_hops if self.peice[
-            pos[0]] == 'w' else self.double_hops
-        for i in range(len(pos) - 1):
-            if Checker.difference(pos[i + 1], pos[i]) in hops:
-                ok.append(pos[i + 1])
-            else:
-                break
-        return ok
-
     def move(self, pos: Optional[tuple[int, int]], side: str) -> None:
-        if side == 'b':
-            pos = self.check_hops(pos)
 
         self.last_move = set()
         opp_side = 'b' if side == 'w' else 'w'
 
-        if self.peice[pos[0]] == side or self.peice[pos[0]] == side.upper():
-
+        if self.peice[pos[0]].lower() == side:
             if len(pos) == 2 and Checker.L1_norm(pos[0], pos[1]) == 2:
                 self.peice[pos[1]] = self.peice[
                     pos[0]] if pos[1][0] else self.peice[pos[0]].upper()
                 self.peice[pos[0]] = 'o'
-                self.last_move = set(pos[:-1])
+                self.last_move = set([pos[0]])
 
             else:
+                print("goinf here")
                 mid_rc = lambda x, y: ((x[0] + y[0]) >> 1, (x[1] + y[1]) >> 1)
                 i = 0
                 while i + 1 < len(pos):
@@ -106,11 +94,9 @@ class Checker(object):
                     else:
                         break
                     i += 1
-                self.last_move.remove(pos[i + 1])
+                self.last_move.remove(pos[-1])
 
-    def start(self, random: bool = False) -> None:
-        if random:
-            self.random_board(False)
+    def start(self) -> None:
         self.draw()
         side = 'w'
 
@@ -119,21 +105,21 @@ class Checker(object):
             print('White: ', self.count['w'])
             print(
                 f'\nEnter the position of the {side} piece you want to move: ')
+            if side == 'w':
+                path = []
+                while True:
 
-            path = []
-
-            while True:
-
-                cin = input()
-                if cin == 'q':
-                    break
-                pos = cin.split()
-                pos = (int(pos[0]), int(pos[1]))
-                path.append(pos)
+                    cin = input()
+                    if cin == 'q':
+                        break
+                    pos = cin.split()
+                    pos = (int(pos[0]), int(pos[1]))
+                    path.append(pos)
+            else:
+                path = self.computer_move()
 
             self.move(path, side)
             self.draw()
-
             side = 'b' if side == 'w' else 'w'
 
         if self.count['b'] == 0:
@@ -141,38 +127,12 @@ class Checker(object):
         else:
             print('Black wins!')
 
-    def dignosis(self) -> None:
-        for i in range(8):
-            if self.peice[(0, i)] == 'w':
-                self.peice[(0, i)] = 'W'
-            if self.peice[(7, i)] == 'b':
-                self.peice[(7, i)] = 'B'
-
-    def random_board(self, draw: bool = True) -> None:
-        import random
-
-        for i in range(8):
-            for j in range(8):
-                self.peice[(i, j)] = 'o'
-
-        ran = {(random.randint(0, 7), random.randint(0, 7)) for _ in range(35)}
-
-        for i in ran:
-            self.peice[i] = random.choice(['b', 'w', 'B', 'W'])
-        self.dignosis()
-        if draw:
-            self.draw()
-
     def possible_paths(self) -> None:
-        self.path = []
-        self.random_board(False)
         for r in range(8):
             for c in range(8):
                 if self.peice[(r, c)].lower() == 'b':
                     self.path.append(
                         self.hops(r, c, self.peice[(r, c)], {}, set()))
-        self.draw()
-        pprint(self.path)
 
     @staticmethod
     def direction(dr: int, dc: int) -> str:
@@ -193,7 +153,7 @@ class Checker(object):
         path['coordinate'] = (r, c)
         path['cost'] = path.get('cost', 0)
         for d in {'ur', 'ul', 'dr', 'dl'}:
-            path[d] = path.get(d, 'q')
+            path[d] = path.get(d, None)
 
         if first:
             for dr, dc in hops:
@@ -201,10 +161,10 @@ class Checker(object):
                     if self.peice[(r + dr, c + dc)] == 'o':
                         path[self.direction(dr, dc)] = {
                             'coordinate': (r + dr, c + dc),
-                            'ur': 'q',
-                            'ul': 'q',
-                            'dr': 'q',
-                            'dl': 'q',
+                            'ur': None,
+                            'ul': None,
+                            'dr': None,
+                            'dl': None,
                             'cost': 1
                         }
 
@@ -215,10 +175,10 @@ class Checker(object):
                             r + 2 * dr, c + 2 * dc)] == 'o':
                 path[self.direction(dr, dc)] = {
                     'coordinate': (r + 2 * dr, c + 2 * dc),
-                    'ur': 'q',
-                    'ul': 'q',
-                    'dr': 'q',
-                    'dl': 'q',
+                    'ur': None,
+                    'ul': None,
+                    'dr': None,
+                    'dl': None,
                     'cost': 2
                 }
                 visited.add((r + 2 * dr, c + 2 * dc))
@@ -226,14 +186,37 @@ class Checker(object):
                           path[self.direction(dr, dc)], visited, False)
         return path
 
-    def best_path(
-            self,
-            tree: dict,
-            visited: Optional[tuple[int,
-                                    int]] = []) -> Optional[tuple[int, int]]:
-        pass
+    def best_path(self, path: dict, path_list: list, path_cost: int) -> list:
+        if path['ur'] == None and path['ul'] == None and path[
+                'dr'] == None and path['dl'] == None:
+            return path_list + [path['coordinate']], path_cost + path['cost']
+        else:
+            path_list.append(path['coordinate'])
+            path_cost += path['cost']
+
+            if path['ur'] != None:
+                return self.best_path(path['ur'], path_list, path_cost)
+            if path['ul'] != None:
+                return self.best_path(path['ul'], path_list, path_cost)
+            if path['dr'] != None:
+                return self.best_path(path['dr'], path_list, path_cost)
+            if path['dl'] != None:
+                return self.best_path(path['dl'], path_list, path_cost)
+
+    def computer_move(self) -> Optional[tuple[int, int]]:
+        self.path.clear()
+        self.possible_paths()
+        moves = {2: [], 1: [], 0: []}
+        for k, v in [self.best_path(i, [], 0) for i in self.path]:
+            moves[v] = moves.get(v, []) + [k]
+        if moves[2] != []:
+            move = random.choice(moves[2])
+        elif moves[1] != []:
+            move = random.choice(moves[1])
+        elif moves[0] != []:
+            move = random.choice(moves[0])
+        return move
 
 
 b = Checker()
-# b.start(True)
-b.possible_paths()
+b.start()
