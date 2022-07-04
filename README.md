@@ -20,7 +20,7 @@ Checkers was a first project that I made in my first year of university. It has 
 Simply enter the coordinates of the board and the piece you want to move. The terminal will show you the board like this, with some extra information.
 
 ```shell
-0  1  2  3  4  5  6  7
+   0  1  2  3  4  5  6  7
 0  ⚫ ⚫ ⚫ ⚫ ⚫ ⚫ ⚫ ⚫
 1  ⚫ ⚫ ⚫ ⚫ ⚫ ⚫ ⚫ ⚫
 2  ⚫ ⚫ ⚫ ⚫ ⚫ ⚫ ⚫ ⚫
