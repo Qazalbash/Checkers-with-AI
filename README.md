@@ -1,6 +1,9 @@
 # Checkers-with-AI
 
 [![wakatime](https://wakatime.com/badge/github/MeesumAliQazalbash/Checkers-with-AI.svg)](https://wakatime.com/badge/github/MeesumAliQazalbash/Checkers-with-AI)
+![Lines of code](https://img.shields.io/tokei/lines/github/MeesumAliQazalbash/Checkers-with-AI)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/y/MeesumAliQazalbash/Checkers-with-AI)
+
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/MeesumAliQazalbash/Checkers-with-AI.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/MeesumAliQazalbash/Checkers-with-AI/alerts/)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/MeesumAliQazalbash/Checkers-with-AI.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/MeesumAliQazalbash/Checkers-with-AI/context:python)
 
