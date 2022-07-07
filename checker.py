@@ -4,7 +4,7 @@ from typing import Optional
 
 
 class Checker:
-    """class to simulate checkers game where computer play against computer"""
+    """class to simulate checkers game where human/computer play against computer"""
     L1_norm = lambda x, y: abs(x[0] - y[0]) + abs(x[1] - y[
         1])  # gives the distance in L_1 space
     normal_unit_hops = {(1, 1), (-1, -1), (1, -1),
@@ -54,13 +54,13 @@ class Checker:
         """print the board on the terminal"""
         if self.clear_screen:
             os.system('clear')
-        print('  ', end=' ')
+        pad = " " * 60
+        print(pad, '  ', end=' ')
         for i in range(8):
             print(i, end='  ')
         print()
-        # color = 'r'  # color for alternating tiles
         for i in range(8):
-            print(i, end='  ')
+            print(pad, i, end='  ')
             for j in range(7):
                 color = 'y' if (i + j) % 2 else 'r'  # changing the color
                 p = 'h' if (i, j) in self.last_move else self.piece[(
@@ -183,9 +183,9 @@ class Checker:
         for d in {'ur', 'ul', 'dr', 'dl'}:
             path[d] = path.get(d, None)  # to avoid any error
 
-        # if it is our first hop only then we can hop onto your diagonal neighbours
-        if first:
-            for dr, dc in hops:
+        for dr, dc in hops:
+            # if it is our first hop only then we can hop onto your diagonal neighbours
+            if first:
                 r_ = r + dr  # r' = r + Δr
                 c_ = c + dc  # c' = c + Δc
                 if 0 <= r_ < 8 and 0 <= c_ < 8 and self.piece[(r_, c_)] == 'o':
@@ -197,7 +197,6 @@ class Checker:
                         'dl': None
                     }
 
-        for dr, dc in hops:
             r_ = r + 2 * dr  # r' = r + 2 * Δr
             c_ = c + 2 * dc  # c' = c + 2 * Δc
             if (0 <= r_ < 8 and 0 <= c_ < 8 and (r_, c_) not in visited
@@ -216,14 +215,14 @@ class Checker:
         return path
 
     def deepest_path(self, path: dict) -> Optional[tuple]:
-        """returns the deepest path in a tree, if there are more 
+        """returns the deepest path in a tree, if there are more
         than one then select any one randomly
 
         Args:
             path (dict): tree in a form of nested dictionaries
 
         Returns:
-            Optional[tuple]: list of all nodes that are on the 
+            Optional[tuple]: list of all nodes that are on the
             deepest path in the tree
         """
         # if there is no way to go more
@@ -262,11 +261,11 @@ class Checker:
 
         if i == 0:
             return down_right
-        if i == 1:
+        elif i == 1:
             return down_left
-        if i == 2:
+        elif i == 2:
             return up_right
-        if i == 3:
+        else:
             return up_left
 
     def paths(self, side: str) -> Optional[Optional[tuple[int, int]]]:
@@ -286,7 +285,10 @@ class Checker:
                     # updating the parity
                     side_parity[(r + c) % 2] = side_parity[(r + c) % 2] or True
                     # appending the deepest path in the path container
-                    path.append(self.deepest_path(self.hops(r, c)))
+                    path.append(
+                        self.deepest_path(self.hops(r, c, dict(), set(),
+                                                    True)))
+
         self.parity[side] = side_parity  # setting the parity
         return path
 
@@ -341,9 +343,10 @@ class Checker:
         side = 'w'  # first move is of white
         count = 0  # number of moves are zero
         charge = True  # parity is True right now
+        self.print_board()
         while self.count['b'] > 0 and self.count['w'] > 0 and charge:
             # printing the board and count
-            self.print_board()
+
             print('\nBlack: ', self.count['b'])
             print('White: ', self.count['w'])
             print('Move:', count, end='\n\n')
@@ -365,6 +368,7 @@ class Checker:
             charge = (self.parity['w'][0]
                       and self.parity['b'][0]) or (self.parity['w'][1]
                                                    and self.parity['b'][1])
+            self.print_board()
 
         if not charge:  # if game draws
             print('Game draws :( in ', end='')
@@ -375,5 +379,5 @@ class Checker:
         print(count, 'moves.')
 
 
-game = Checker(False, True)
+game = Checker(human=False, clear_screen=True)
 game.start()
