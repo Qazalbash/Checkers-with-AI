@@ -1,15 +1,15 @@
 import os
 import random
 from typing import Optional
+import json
 
 
 class Checker:
     """class to simulate checkers game where human/computer play against computer"""
     L1_norm = lambda x, y: abs(x[0] - y[0]) + abs(x[1] - y[
         1])  # gives the distance in L_1 space
-    normal_unit_hops = {(1, 1), (-1, -1), (1, -1),
-                        (-1, 1)}  # normal unit hopes
-    count = {'b': 24, 'w': 24}  # count of the pieces
+    normal_unit_hops = [(1, 1), (-1, -1), (1, -1),
+                        (-1, 1)]  # normal unit hopes
     tile = {
         'b': '⚫',
         'B': '⬛',
@@ -28,10 +28,19 @@ class Checker:
         """
         self.human = human
         self.clear_screen = clear_screen
-        self.last_move = set()  # set that contain all the last move piece had
-        self.initiate_pieces()  # places the pieces on the board
-        # parity to avoid the color segeration
-        self.parity = {'w': {0: True, 1: True}, 'b': {0: True, 1: True}}
+        self.stats = {
+            'win': {
+                'w': {
+                    'avg moves': 0,
+                    'count': 0
+                },
+                'b': {
+                    'avg moves': 0,
+                    'count': 0
+                }
+            },
+            'draw': 0
+        }
 
     def initiate_pieces(self) -> None:
         """places the pieces on the board"""
@@ -166,21 +175,21 @@ class Checker:
         p = self.piece[(r, c)]
         # allowed hops and the pieces to hop on
         if p == 'b':
-            hops = {(1, 1), (1, -1)}
-            allowed = {'w'}
+            hops = [(1, 1), (1, -1)]
+            allowed = ['w']
         elif p == 'w':
-            hops = {(-1, 1), (-1, -1)}
-            allowed = {'b'}
+            hops = [(-1, 1), (-1, -1)]
+            allowed = ['b']
         else:
             hops = self.normal_unit_hops
             if p == 'B':
-                allowed = {'w', 'W'}
+                allowed = ['w', 'W']
             else:
-                allowed = {'b', 'B'}
+                allowed = ['b', 'B']
 
         path['coordinate'] = (r, c)  # adding the coordinates
 
-        for d in {'ur', 'ul', 'dr', 'dl'}:
+        for d in ['ur', 'ul', 'dr', 'dl']:
             path[d] = path.get(d, None)  # to avoid any error
 
         for dr, dc in hops:
@@ -239,6 +248,7 @@ class Checker:
         up_left = self.deepest_path(path['ul'])
 
         length = [len(down_right), len(down_left), len(up_right), len(up_left)]
+
         deepest = max(length)
 
         if length[0] == deepest:
@@ -252,9 +262,10 @@ class Checker:
 
         # randomly chossing a path from all path
 
+        deepest = max(length)
+
         index = [0, 1, 2, 3]
         i = random.choice(index)
-
         while length[i] != deepest:
             index.remove(i)
             i = random.choice(index)
@@ -340,17 +351,18 @@ class Checker:
 
     def start(self) -> None:
         """starts the game"""
-        side = 'w'  # first move is of white
+        # randomly selecting side for first move
+        side = random.choice(['b', 'w'])
         count = 0  # number of moves are zero
         charge = True  # parity is True right now
+        self.last_move = set()  # set that contain all the last move piece had
+        self.initiate_pieces()  # places the pieces on the board
+        # parity to avoid the color segeration
+        self.parity = {'w': {0: True, 1: True}, 'b': {0: True, 1: True}}
+        self.count = {'b': 24, 'w': 24}  # count of the pieces
+
         self.print_board()
         while self.count['b'] > 0 and self.count['w'] > 0 and charge:
-            # printing the board and count
-
-            print('\nBlack: ', self.count['b'])
-            print('White: ', self.count['w'])
-            print('Move:', count, end='\n\n')
-
             if side == 'w':
                 # human playing from the side
                 if self.human:
@@ -368,16 +380,70 @@ class Checker:
             charge = (self.parity['w'][0]
                       and self.parity['b'][0]) or (self.parity['w'][1]
                                                    and self.parity['b'][1])
+            # printing the board and count
+            print('\nBlack: ', self.count['b'])
+            print('White: ', self.count['w'])
+            print('Move:', count, end='\n\n')
             self.print_board()
 
         if not charge:  # if game draws
             print('Game draws :( in ', end='')
+            self.stats['draw'] += 1
         elif self.count['b'] == 0:  # if white wins
             print('White wins! in ', end='')
+
+            self.stats['win']['w']['avg moves'] = (
+                self.stats['win']['w']['avg moves'] *
+                self.stats['win']['w']['count'] +
+                count) / (self.stats['win']['w']['count'] + 1)
+
+            self.stats['win']['w']['count'] += 1
+
         else:  # if black wins
             print('Black wins! in ', end='')
+
+            self.stats['win']['b']['avg moves'] = (
+                self.stats['win']['b']['avg moves'] *
+                self.stats['win']['b']['count'] +
+                count) / (self.stats['win']['b']['count'] + 1)
+
+            self.stats['win']['b']['count'] += 1
+
         print(count, 'moves.')
+
+    def save(self) -> None:
+        """save the stats of the game into a file"""
+        # reading the file
+        with open("game_stats.json", "r") as file:
+            file = json.load(file)
+
+            # updating the average moves of white
+            file['win']['w']['avg moves'] = (
+                (file['win']['w']['avg moves'] * file['win']['w']['count']) +
+                (self.stats['win']['w']['avg moves'] *
+                 self.stats['win']['w']['count'])
+            ) / (file['win']['w']['count'] + self.stats['win']['w']['count'])
+
+            # updating the average moves of black
+            file['win']['b']['avg moves'] = (
+                (file['win']['b']['avg moves'] * file['win']['b']['count']) +
+                (self.stats['win']['b']['avg moves'] *
+                 self.stats['win']['b']['count'])
+            ) / (file['win']['b']['count'] + self.stats['win']['b']['count'])
+
+            # updating the win count of white and black
+            file['win']['w']['count'] += self.stats['win']['w']['count']
+            file['win']['b']['count'] += self.stats['win']['b']['count']
+
+            # updating the draw count
+            file['draw'] += self.stats['win']['b']['count']
+
+        # dumping the stats in the file
+        with open("game_stats.json", "w") as outfile:
+            json.dump(file, outfile)
 
 
 game = Checker(human=False, clear_screen=True)
-game.start()
+for _ in range(10):
+    game.start()
+game.save()
