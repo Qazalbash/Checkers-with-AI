@@ -1,15 +1,17 @@
+import json
 import os
 import random
+from itertools import product
 from typing import Optional
-import json
 
 
 class Checker:
     """class to simulate checkers game where human/computer play against computer"""
-    L1_norm = lambda x, y: abs(x[0] - y[0]) + abs(x[1] - y[
-        1])  # gives the distance in L_1 space
-    normal_unit_hops = [(1, 1), (-1, -1), (1, -1),
-                        (-1, 1)]  # normal unit hopes
+    # gives the distance in L_1 space
+    L1_norm = lambda x, y: abs(x[0] - y[0]) + abs(x[1] - y[1])
+    # normal unit hopes
+    normal_unit_hops = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+    # tiles used to print the board
     tile = {
         'b': '⚫',
         'B': '⬛',
@@ -18,14 +20,14 @@ class Checker:
         'r': '🟥',
         'y': '🟨',
         'h': '🟩'
-    }  # tiles used to print the board
+    }
 
     def __init__(self, human: bool = False, clear_screen: bool = True) -> None:
         """Constructor
 
-        Args: 
-            clear_screen (bool, optional): if True then clear screen after each new move. Defaults to True.
-        """
+        Args:
+            human (bool, optional): if True then human will from white's side. Defaults to False.
+            clear_screen (bool, optional): if True then clear screen after each new move. Defaults to True."""
         self.human = human
         self.clear_screen = clear_screen
         self.stats = {
@@ -47,17 +49,13 @@ class Checker:
         self.piece = dict()
         for c in range(8):
             for r in range(3):
-                self.piece[(
-                    r, c
-                )] = 'b'  # placing the black pieces on the upper three rows of the board
+                # placing the black pieces on the upper three rows of the board
+                self.piece[(r, c)] = 'b'
+                # placing the white pieces on the lower three rows of the board
+                self.piece[(7 - r, c)] = 'w'
             for r in range(3, 5):
-                self.piece[(
-                    r, c
-                )] = 'o'  # placing the empty pieces on the mid two rows of the board
-            for r in range(5, 8):
-                self.piece[(
-                    r, c
-                )] = 'w'  # placing the white pieces on the lower three rows of the board
+                # placing the empty pieces on the mid two rows of the board
+                self.piece[(r, c)] = 'o'
 
     def print_board(self) -> None:
         """print the board on the terminal"""
@@ -72,9 +70,8 @@ class Checker:
             print(pad, i, end='  ')
             for j in range(7):
                 color = 'y' if (i + j) % 2 else 'r'  # changing the color
-                p = 'h' if (i, j) in self.last_move else self.piece[(
-                    i, j
-                )]  # if piece was in the last move then its 'h' for tiling
+                # if piece was in the last move then its 'h' for tiling
+                p = 'h' if (i, j) in self.last_move else self.piece[(i, j)]
                 if p == 'o':
                     p = color  # color for empty piece
                 print(self.tile[p], end=' ')
@@ -94,10 +91,7 @@ class Checker:
 
         Args:
             pos (Optional[tuple[int, int]]): sequence of position to move piece on the board
-            side (str): piece is from which side
-        """
-
-        self.last_move = set()  # clearing the last move
+            side (str): piece is from which side"""
         opp_side = 'b' if side == 'w' else 'w'  # changing the sides
         # function to calculate mid of two position
         mid_rc = lambda x, y: ((x[0] + y[0]) >> 1, (x[1] + y[1]) >> 1)
@@ -107,9 +101,7 @@ class Checker:
         if len(pos) == 2 and Checker.L1_norm(pos[0], pos[1]) == 2:
             self.piece[pos[1]] = self.piece[pos[0]].upper(
             ) if pos[1][0] == 7 * (side == 'b') else self.piece[pos[0]]
-
             self.piece[pos[0]] = 'o'
-            self.last_move = {pos[0]}
 
         else:
             # if the hop is beating the opposite side pieces
@@ -133,7 +125,7 @@ class Checker:
                         self.piece[pos[i + 1]] = self.piece[pos[i]]
 
                     self.piece[pos[i]] = 'o'  # setting middle as empty
-                    self.last_move.add(pos[i])  # updating the last move
+                    # self.last_move.add(pos[i])  # updating the last move
                 else:
                     # breaking the chain of hopping because we have illegal hops from now
                     break
@@ -147,8 +139,7 @@ class Checker:
             dc (int): change in column
 
         Returns:
-            str: the direction string
-        """
+            str: the direction string"""
         return ('dl' * (dc < 0) + 'dr' *
                 (dc > 0)) * (dr > 0) + ('ul' * (dc < 0) + 'ur' *
                                         (dc > 0)) * (dr < 0)
@@ -169,9 +160,7 @@ class Checker:
             first (bool, optional): True if the hop is first hop. Defaults to True.
 
         Returns:
-            dict: container that contains all the paths
-        """
-
+            dict: container that contains all the paths"""
         p = self.piece[(r, c)]
         # allowed hops and the pieces to hop on
         if p == 'b':
@@ -206,8 +195,8 @@ class Checker:
                         'dl': None
                     }
 
-            r_ = r + 2 * dr  # r' = r + 2 * Δr
-            c_ = c + 2 * dc  # c' = c + 2 * Δc
+            r_ = r + (dr << 1)  # r' = r + 2 * Δr
+            c_ = c + (dc << 1)  # c' = c + 2 * Δc
             if (0 <= r_ < 8 and 0 <= c_ < 8 and (r_, c_) not in visited
                     and self.piece[(r + dr, c + dc)] in allowed
                     and self.piece[(r_, c_)] == 'o'):
@@ -232,8 +221,7 @@ class Checker:
 
         Returns:
             Optional[tuple]: list of all nodes that are on the
-            deepest path in the tree
-        """
+            deepest path in the tree"""
         # if there is no way to go more
         if path is None:
             return []
@@ -262,10 +250,9 @@ class Checker:
 
         # randomly chossing a path from all path
 
-        deepest = max(length)
-
         index = [0, 1, 2, 3]
         i = random.choice(index)
+        deepest = max(length)
         while length[i] != deepest:
             index.remove(i)
             i = random.choice(index)
@@ -290,15 +277,14 @@ class Checker:
             path possible for each piece"""
         path = []  # container for all deepest paths from all position
         side_parity = {0: False, 1: False}  # setting parity false for new run
-        for r in range(8):
-            for c in range(8):
-                if self.piece[(r, c)].lower() == side:
-                    # updating the parity
-                    side_parity[(r + c) % 2] = side_parity[(r + c) % 2] or True
-                    # appending the deepest path in the path container
-                    path.append(
-                        self.deepest_path(self.hops(r, c, dict(), set(),
-                                                    True)))
+        for r, c in product(range(8), range(8)):
+            # for c in range(8):
+            if self.piece[(r, c)].lower() == side:
+                # updating the parity
+                side_parity[(r + c) % 2] = side_parity[(r + c) % 2] or True
+                # appending the deepest path in the path container
+                path.append(
+                    self.deepest_path(self.hops(r, c, dict(), set(), True)))
 
         self.parity[side] = side_parity  # setting the parity
         return path
@@ -307,8 +293,7 @@ class Checker:
         """collects the move human wants to play
 
         Returns:
-            Optional[tuple[int, int]]: list of moves from human
-        """
+            Optional[tuple[int, int]]: list of moves from human"""
         print('Enter your move dear human.')
         cin = input()  # taking inpurt from human
         pos = (int(cin[0]), int(cin[2]))
@@ -323,7 +308,7 @@ class Checker:
         return move
 
     def computer_move(self, side: str) -> Optional[tuple[int, int]]:
-        """returns the move computer wanna play
+        """returns the move computer wants to play
 
         Args:
             side (str): side which computer playing
@@ -346,22 +331,29 @@ class Checker:
                 moves[2] = beating_hop
 
         # randomly chossing one hop from the collection of all deepest hops
-        move = random.choice(moves[jump])
-        return move[::-1]
+        move = random.choice(moves[jump])[::-1]
+        self.last_move = move[:-1]
+        return move
 
     def start(self) -> None:
         """starts the game"""
+        # parity is True right now
+        charge = True
+        # number of moves are zero
+        move_count = 0
+        # set that contain all the last move piece had
+        self.last_move = []
+        # places the pieces on the board
+        self.initiate_pieces()
+        # count of the pieces
+        self.count = {'b': 24, 'w': 24}
         # randomly selecting side for first move
         side = random.choice(['b', 'w'])
-        count = 0  # number of moves are zero
-        charge = True  # parity is True right now
-        self.last_move = set()  # set that contain all the last move piece had
-        self.initiate_pieces()  # places the pieces on the board
         # parity to avoid the color segeration
         self.parity = {'w': {0: True, 1: True}, 'b': {0: True, 1: True}}
-        self.count = {'b': 24, 'w': 24}  # count of the pieces
 
         self.print_board()
+
         while self.count['b'] > 0 and self.count['w'] > 0 and charge:
             if side == 'w':
                 # human playing from the side
@@ -375,7 +367,7 @@ class Checker:
             self.move(path, side)
             # channging the side for next move
             side = 'b' if side == 'w' else 'w'
-            count += 1
+            move_count += 1
             # checking the parity
             charge = (self.parity['w'][0]
                       and self.parity['b'][0]) or (self.parity['w'][1]
@@ -383,7 +375,7 @@ class Checker:
             # printing the board and count
             print('\nBlack: ', self.count['b'])
             print('White: ', self.count['w'])
-            print('Move:', count, end='\n\n')
+            print('Move:', move_count, end='\n\n')
             self.print_board()
 
         if not charge:  # if game draws
@@ -395,7 +387,7 @@ class Checker:
             self.stats['win']['w']['avg moves'] = (
                 self.stats['win']['w']['avg moves'] *
                 self.stats['win']['w']['count'] +
-                count) / (self.stats['win']['w']['count'] + 1)
+                move_count) / (self.stats['win']['w']['count'] + 1)
 
             self.stats['win']['w']['count'] += 1
 
@@ -405,11 +397,11 @@ class Checker:
             self.stats['win']['b']['avg moves'] = (
                 self.stats['win']['b']['avg moves'] *
                 self.stats['win']['b']['count'] +
-                count) / (self.stats['win']['b']['count'] + 1)
+                move_count) / (self.stats['win']['b']['count'] + 1)
 
             self.stats['win']['b']['count'] += 1
 
-        print(count, 'moves.')
+        print(move_count, 'moves.')
 
     def save(self) -> None:
         """save the stats of the game into a file"""
@@ -436,7 +428,7 @@ class Checker:
             file['win']['b']['count'] += self.stats['win']['b']['count']
 
             # updating the draw count
-            file['draw'] += self.stats['win']['b']['count']
+            file['draw'] += self.stats['draw']
 
         # dumping the stats in the file
         with open("game_stats.json", "w") as outfile:
@@ -444,6 +436,6 @@ class Checker:
 
 
 game = Checker(human=False, clear_screen=True)
-for _ in range(10):
+for _ in range(2):
     game.start()
 game.save()
