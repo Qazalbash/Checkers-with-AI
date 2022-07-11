@@ -22,14 +22,19 @@ class Checker:
         'h': '🟩'
     }
 
-    def __init__(self, human: bool = False, clear_screen: bool = True) -> None:
+    def __init__(self,
+                 human: bool = False,
+                 clear_screen: bool = True,
+                 delay: float = 0.0) -> None:
         """Constructor
 
         Args:
             human (bool, optional): if True then human will from white's side. Defaults to False.
-            clear_screen (bool, optional): if True then clear screen after each new move. Defaults to True."""
+            clear_screen (bool, optional): if True then clear screen after each new move. Defaults to True.
+            delay (float, optional): delay in number of seconds for next board to appear. Defaults to 0.0."""
         self.human = human
         self.clear_screen = clear_screen
+        self.delay = delay
         self.stats = {
             'win': {
                 'w': {
@@ -57,8 +62,11 @@ class Checker:
                 # placing the empty pieces on the mid two rows of the board
                 self.piece[(r, c)] = 'o'
 
-    def print_board(self) -> None:
-        """print the board on the terminal"""
+    def print_screen(self, move_count: int = 0) -> None:
+        """print the board on the terminal
+
+        Args:
+            move_count (int, optional): move number. Defaults to 0."""
         for i, j in product(range(8), range(8)):
             color = 'y' if (i + j) % 2 else 'r'  # changing the color
             # if piece was in the last move then its 'h' for tiling
@@ -66,6 +74,9 @@ class Checker:
             if p == 'o':
                 p = color  # color for empty piece
             print(self.tile[p], end=None if j == 7 else ' ')
+        print('\nBlack: ', self.count['b'])
+        print('White: ', self.count['w'])
+        print('Move:', move_count, end='\n\n')
 
     @staticmethod
     def L1_norm(x: tuple[int, int], y: tuple[int, int]) -> int:
@@ -145,6 +156,8 @@ class Checker:
              r: int,
              c: int,
              p: str,
+             steps: Optional[tuple[int, int]],
+             allowed: Optional[str],
              path: dict = dict(),
              visited: set = set(),
              first: bool = True) -> dict:
@@ -153,32 +166,21 @@ class Checker:
         Args:
             r (int): row of the piece
             c (int): column of the piece
+            steps (Optional[tuple[int, int]]): valid hops from a given position.
+            allowed (Optional[str]): pieces allowed to be hoped over.
             path (dict, optional): container storing the path. Defaults to dict().
             visited (set, optional): visited position. Defaults to set().
             first (bool, optional): True if the hop is first hop. Defaults to True.
 
         Returns:
             dict: container that contains all the paths"""
-        # allowed hops and the pieces to hop on
-        if p == 'b':
-            hops = [(1, 1), (1, -1)]
-            allowed = ['w']
-        elif p == 'w':
-            hops = [(-1, 1), (-1, -1)]
-            allowed = ['b']
-        else:
-            hops = self.normal_unit_hops
-            if p == 'B':
-                allowed = ['w', 'W']
-            else:
-                allowed = ['b', 'B']
 
         path['coordinate'] = (r, c)  # adding the coordinates
 
         for d in ['ur', 'ul', 'dr', 'dl']:
             path[d] = path.get(d, None)  # to avoid any error
 
-        for dr, dc in hops:
+        for dr, dc in steps:
             # if it is our first hop only then we can hop onto your diagonal neighbours
             if first:
                 r_ = r + dr  # r' = r + Δr
@@ -207,8 +209,8 @@ class Checker:
                 }
                 visited.add((r_, c_))  # visiting the position
                 # exploring more hops
-                self.hops(r_, c_, p, path[self.direction(dr, dc)], visited,
-                          False)
+                self.hops(r_, c_, p, steps, allowed,
+                          path[self.direction(dr, dc)], visited, False)
         return path
 
     def deepest_path(self, path: dict) -> Optional[tuple]:
@@ -277,13 +279,26 @@ class Checker:
         path = []  # container for all deepest paths from all position
         side_parity = {0: False, 1: False}  # setting parity false for new run
         for r, c in product(range(8), range(8)):
-            if self.piece[(r, c)].lower() == side:
+            p = self.piece[(r, c)]
+            if p.lower() == side:
+                # allowed hops and the pieces to hop on
+                if p == 'b':
+                    steps = [(1, 1), (1, -1)]
+                    allowed = ['w']
+                elif p == 'w':
+                    steps = [(-1, 1), (-1, -1)]
+                    allowed = ['b']
+                else:
+                    steps = self.normal_unit_hops
+                    if p == 'B':
+                        allowed = ['w', 'W']
+                    else:
+                        allowed = ['b', 'B']
+                hop = self.hops(r, c, p, steps, allowed, dict(), set(), True)
+                # appending the deepest path in the path container
+                path.append(self.deepest_path(hop))
                 # updating the parity
                 side_parity[(r + c) % 2] = side_parity[(r + c) % 2] or True
-                # appending the deepest path in the path container
-                hops = self.hops(r, c, self.piece[(r, c)], dict(), set(), True)
-                path.append(self.deepest_path(hops))
-
         self.parity[side] = side_parity  # setting the parity
         return path
 
@@ -350,7 +365,7 @@ class Checker:
         # parity to avoid the color segeration
         self.parity = {'w': {0: True, 1: True}, 'b': {0: True, 1: True}}
 
-        self.print_board()
+        # self.print_screen()
 
         while self.count['b'] > 0 and self.count['w'] > 0 and charge:
             if side == 'w':
@@ -364,20 +379,17 @@ class Checker:
                 path = self.computer_move('b')
             self.move(path, side)
             # channging the side for next move
-            side = 'b' if side == 'w' else 'w'
+            side = 'b' * (side == 'w') + 'w' * (side == 'b')
             move_count += 1
             # checking the parity
             charge = (self.parity['w'][0]
                       and self.parity['b'][0]) or (self.parity['w'][1]
                                                    and self.parity['b'][1])
-            # printing the board and count
-            print('\nBlack: ', self.count['b'])
-            print('White: ', self.count['w'])
-            print('Move:', move_count, end='\n\n')
-            time.sleep(1)
+            # self.print_screen(move_count)
+            time.sleep(self.delay)
             if self.clear_screen:
                 os.system('clear')
-            self.print_board()
+            # printing the board and count
 
         if not charge:  # if game draws
             print('Game draws :( in ', end='')
@@ -436,7 +448,8 @@ class Checker:
             json.dump(file, outfile)
 
 
-game = Checker(human=False, clear_screen=False)
-for _ in range(1000):
+game = Checker(human=False, clear_screen=False, delay=0.0)
+for game_no in range(10000):
+    print(game_no, end=' ')
     game.start()
 game.save()
