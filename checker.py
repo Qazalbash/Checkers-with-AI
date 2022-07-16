@@ -5,6 +5,9 @@ import time
 from itertools import product
 from typing import Optional
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 
 class Checker:
     """class to simulate checkers game where human/computer play against computer"""
@@ -13,13 +16,13 @@ class Checker:
     normal_unit_hops = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
     # tiles used to print the board
     tile = {
-        'b': '⚫',
-        'B': '⬛',
-        'w': '⚪',
-        'W': '⬜',
-        'r': '🟥',
-        'y': '🟨',
-        'h': '🟩'
+        "b": "⚫",
+        "B": "⬛",
+        "w": "⚪",
+        "W": "⬜",
+        "r": "🟥",
+        "y": "🟨",
+        "h": "🟩"
     }
 
     def __init__(self,
@@ -29,25 +32,13 @@ class Checker:
         """Constructor
 
         Args:
-            human (bool, optional): if True then human will from white's side. Defaults to False.
+            human (bool, optional): if True then human will from white"s side. Defaults to False.
             clear_screen (bool, optional): if True then clear screen after each new move. Defaults to True.
             delay (float, optional): delay in number of seconds for next board to appear. Defaults to 0.0."""
         self.human = human
         self.clear_screen = clear_screen
         self.delay = delay
-        self.stats = {
-            'win': {
-                'w': {
-                    'avg moves': 0,
-                    'count': 0
-                },
-                'b': {
-                    'avg moves': 0,
-                    'count': 0
-                }
-            },
-            'draw': 0
-        }
+        self.stats = {"w": {}, "b": {}, "draw": 0}
 
     def initiate_pieces(self) -> None:
         """places the pieces on the board"""
@@ -55,28 +46,28 @@ class Checker:
         for c in range(8):
             for r in range(3):
                 # placing the black pieces on the upper three rows of the board
-                self.piece[(r, c)] = 'b'
+                self.piece[(r, c)] = "b"
                 # placing the white pieces on the lower three rows of the board
-                self.piece[(7 - r, c)] = 'w'
+                self.piece[(7 - r, c)] = "w"
             for r in range(3, 5):
                 # placing the empty pieces on the mid two rows of the board
-                self.piece[(r, c)] = 'o'
+                self.piece[(r, c)] = "o"
 
     def print_screen(self, move_count: int = 0) -> None:
         """print the board on the terminal
 
         Args:
             move_count (int, optional): move number. Defaults to 0."""
-        for i, j in product(range(8), range(8)):
-            color = 'y' if (i + j) % 2 else 'r'  # changing the color
-            # if piece was in the last move then its 'h' for tiling
-            p = 'h' if (i, j) in self.last_move else self.piece[(i, j)]
-            if p == 'o':
+        for i, j in product(range(8), repeat=2):
+            color = "y" if (i + j) % 2 else "r"  # changing the color
+            # if piece was in the last move then its "h" for tiling
+            p = "h" if (i, j) in self.last_move else self.piece[(i, j)]
+            if p == "o":
                 p = color  # color for empty piece
-            print(self.tile[p], end=None if j == 7 else ' ')
-        print('\nBlack: ', self.count['b'])
-        print('White: ', self.count['w'])
-        print('Move:', move_count, end='\n\n')
+            print(self.tile[p], end=None if j == 7 else " ")
+        print("\nBlack: ", self.count["b"])
+        print("White: ", self.count["w"])
+        print("Move:", move_count, end="\n\n")
 
     @staticmethod
     def L1_norm(x: tuple[int, int], y: tuple[int, int]) -> int:
@@ -98,7 +89,7 @@ class Checker:
             pos (Optional[tuple[int, int]]): sequence of position to move piece on the board
             side (str): piece is from which side"""
         # changing the sides
-        opp_side = 'b' * (side == 'w') + 'w' * (side == 'b')
+        opp_side = "b" * (side == "w") + "w" * (side == "b")
         # function to calculate mid of two position
         mid_rc = lambda x, y: ((x[0] + y[0]) >> 1, (x[1] + y[1]) >> 1)
 
@@ -106,17 +97,17 @@ class Checker:
         # hoping to their digonally adjacent neighbours
         if len(pos) == 2 and Checker.L1_norm(pos[0], pos[1]) == 2:
             # checking if horse has to be made
-            if pos[1][0] == 7 * (side == 'b'):
+            if pos[1][0] == 7 * (side == "b"):
                 self.piece[pos[1]] = self.piece[pos[0]].upper()
             else:
                 self.piece[pos[1]] = self.piece[pos[0]]
-            self.piece[pos[0]] = 'o'
+            self.piece[pos[0]] = "o"
 
         else:
             # if the hop is beating the opposite side pieces
             for i in range(len(pos) - 1):
                 if (  # there is always an empty piece after the hop
-                        self.piece[pos[i + 1]] == 'o'
+                        self.piece[pos[i + 1]] == "o"
                         # the hop must be jumping two squares doiagonally
                         and Checker.L1_norm(pos[i + 1], pos[i]) == 4
                         # there must be a peice of opposite side between the jump and landing position
@@ -125,15 +116,15 @@ class Checker:
 
                     self.count[opp_side] -= 1  # reducing the count
                     # setting the middle piece as empty piece
-                    self.piece[mid_rc(pos[i + 1], pos[i])] = 'o'
+                    self.piece[mid_rc(pos[i + 1], pos[i])] = "o"
 
                     # checking if horse has to be made
-                    if pos[i + 1][0] == 7 * (side == 'b'):
+                    if pos[i + 1][0] == 7 * (side == "b"):
                         self.piece[pos[i + 1]] = self.piece[pos[i]].upper()
                     else:
                         self.piece[pos[i + 1]] = self.piece[pos[i]]
 
-                    self.piece[pos[i]] = 'o'  # setting middle as empty
+                    self.piece[pos[i]] = "o"  # setting middle as empty
                 else:
                     # breaking the chain of hopping because we have illegal hops from now
                     break
@@ -148,8 +139,8 @@ class Checker:
 
         Returns:
             str: the direction string"""
-        return ('dl' * (dc < 0) + 'dr' *
-                (dc > 0)) * (dr > 0) + ('ul' * (dc < 0) + 'ur' *
+        return ("dl" * (dc < 0) + "dr" *
+                (dc > 0)) * (dr > 0) + ("ul" * (dc < 0) + "ur" *
                                         (dc > 0)) * (dr < 0)
 
     def hops(self,
@@ -175,37 +166,37 @@ class Checker:
         Returns:
             dict: container that contains all the paths"""
 
-        path['coordinate'] = (r, c)  # adding the coordinates
+        path["coordinate"] = (r, c)  # adding the coordinates
 
-        for d in ['ur', 'ul', 'dr', 'dl']:
+        for d in ["ur", "ul", "dr", "dl"]:
             path[d] = path.get(d, None)  # to avoid any error
 
         for dr, dc in steps:
             # if it is our first hop only then we can hop onto your diagonal neighbours
             if first:
-                r_ = r + dr  # r' = r + Δr
-                c_ = c + dc  # c' = c + Δc
-                if 0 <= r_ < 8 and 0 <= c_ < 8 and self.piece[(r_, c_)] == 'o':
+                r_ = r + dr  # r" = r + Δr
+                c_ = c + dc  # c" = c + Δc
+                if 0 <= r_ < 8 and 0 <= c_ < 8 and self.piece[(r_, c_)] == "o":
                     path[self.direction(dr, dc)] = {
-                        'coordinate': (r_, c_),
-                        'ur': None,
-                        'ul': None,
-                        'dr': None,
-                        'dl': None
+                        "coordinate": (r_, c_),
+                        "ur": None,
+                        "ul": None,
+                        "dr": None,
+                        "dl": None
                     }
 
-            r_ = r + (dr << 1)  # r' = r + 2 * Δr
-            c_ = c + (dc << 1)  # c' = c + 2 * Δc
+            r_ = r + (dr << 1)  # r" = r + 2 * Δr
+            c_ = c + (dc << 1)  # c" = c + 2 * Δc
 
             if (0 <= r_ < 8 and 0 <= c_ < 8 and (r_, c_) not in visited
                     and self.piece[(r + dr, c + dc)] in allowed
-                    and self.piece[(r_, c_)] == 'o'):
+                    and self.piece[(r_, c_)] == "o"):
                 path[self.direction(dr, dc)] = {
-                    'coordinate': (r_, c_),
-                    'ur': None,
-                    'ul': None,
-                    'dr': None,
-                    'dl': None
+                    "coordinate": (r_, c_),
+                    "ur": None,
+                    "ul": None,
+                    "dr": None,
+                    "dl": None
                 }
                 visited.add((r_, c_))  # visiting the position
                 # exploring more hops
@@ -225,29 +216,29 @@ class Checker:
             deepest path in the tree"""
         # if there is no way to go more
         if path is None:
-            return []
+            return list()
 
         # exploring path in down right direction
-        down_right = self.deepest_path(path['dr'])
+        down_right = self.deepest_path(path["dr"])
         # exploring path in down left direction
-        down_left = self.deepest_path(path['dl'])
+        down_left = self.deepest_path(path["dl"])
         # exploring path in up right direction
-        up_right = self.deepest_path(path['ur'])
+        up_right = self.deepest_path(path["ur"])
         # exploring path in up left direction
-        up_left = self.deepest_path(path['ul'])
+        up_left = self.deepest_path(path["ul"])
 
         length = [len(down_right), len(down_left), len(up_right), len(up_left)]
 
         deepest = max(length)
 
         if length[0] == deepest:
-            down_right.append(path['coordinate'])
+            down_right.append(path["coordinate"])
         if length[1] == deepest:
-            down_left.append(path['coordinate'])
+            down_left.append(path["coordinate"])
         if length[2] == deepest:
-            up_right.append(path['coordinate'])
+            up_right.append(path["coordinate"])
         if length[3] == deepest:
-            up_left.append(path['coordinate'])
+            up_left.append(path["coordinate"])
 
         # randomly chossing a path from all path
 
@@ -276,29 +267,33 @@ class Checker:
         Returns:
             Optional[Optional[tuple[int,int]]]: list of a deepest 
             path possible for each piece"""
-        path = []  # container for all deepest paths from all position
-        side_parity = {0: False, 1: False}  # setting parity false for new run
-        for r, c in product(range(8), range(8)):
+        path = list()  # container for all deepest paths from all position
+        side_parity = dict()  # setting parity false for new run
+        for r, c in product(range(8), repeat=2):
             p = self.piece[(r, c)]
             if p.lower() == side:
                 # allowed hops and the pieces to hop on
-                if p == 'b':
+                if p == "b":
                     steps = [(1, 1), (1, -1)]
-                    allowed = ['w']
-                elif p == 'w':
+                    # steps = self.quad_count(r, c, p, False, True)
+                    allowed = ["w"]
+                elif p == "w":
                     steps = [(-1, 1), (-1, -1)]
-                    allowed = ['b']
+                    allowed = ["b"]
                 else:
                     steps = self.normal_unit_hops
-                    if p == 'B':
-                        allowed = ['w', 'W']
+                    if p == "B":
+                        allowed = ["w", "W"]
                     else:
-                        allowed = ['b', 'B']
+                        allowed = ["b", "B"]
                 hop = self.hops(r, c, p, steps, allowed, dict(), set(), True)
                 # appending the deepest path in the path container
-                path.append(self.deepest_path(hop))
+                dp = self.deepest_path(hop)
+                if len(dp) > 1:
+                    path.append(dp)
                 # updating the parity
-                side_parity[(r + c) % 2] = side_parity[(r + c) % 2] or True
+                side_parity[(r + c) % 2] = side_parity.get(
+                    (r + c) % 2, False) or True
         self.parity[side] = side_parity  # setting the parity
         return path
 
@@ -307,14 +302,14 @@ class Checker:
 
         Returns:
             Optional[tuple[int, int]]: list of moves from human"""
-        print('Enter your move dear human.')
+        print("Enter your move dear human.")
         cin = input()  # taking inpurt from human
         pos = (int(cin[0]), int(cin[2]))
         move = [pos]
         while True:
             # if human gives q then stops the input and return the collected moves
             cin = input()
-            if cin == 'q':
+            if cin == "q":
                 break
             pos = (int(cin[0]), int(cin[2]))
             move.append(pos)
@@ -330,12 +325,16 @@ class Checker:
             Optional[tuple[int, int]]: list of the position to 
             move piece on the board"""
         path = self.paths(side)
-        moves = {}  # dict for all moves
+
+        if len(path) == 0:
+            return None
+
+        moves = dict()  # dict for all moves
         jump = 0  # depth of the hop
         for k in path:
             if len(k) > jump:
                 jump = len(k)
-            moves[len(k)] = moves.get(len(k), []) + [k]
+            moves[len(k)] = moves.get(len(k), list()) + [k]
 
         if jump == 2:  # if we are hoping over once then it must be a beating hop
             beating_hop = list(
@@ -355,66 +354,63 @@ class Checker:
         # number of moves are zero
         move_count = 0
         # set that contain all the last move piece had
-        self.last_move = []
+        self.last_move = list()
         # places the pieces on the board
         self.initiate_pieces()
         # count of the pieces
-        self.count = {'b': 24, 'w': 24}
+        self.count = {"b": 24, "w": 24}
         # randomly selecting side for first move
-        side = random.choice(['b', 'w'])
+        side = random.choice(["b", "w"])
         # parity to avoid the color segeration
-        self.parity = {'w': {0: True, 1: True}, 'b': {0: True, 1: True}}
+        self.parity = {"w": {0: True, 1: True}, "b": {0: True, 1: True}}
+        MAX = 600
 
         # self.print_screen()
 
-        while self.count['b'] > 0 and self.count['w'] > 0 and charge:
-            if side == 'w':
+        while self.count["b"] > 0 and self.count[
+                "w"] > 0 and charge and move_count <= MAX:
+            if side == "w":
                 # human playing from the side
                 if self.human:
                     path = self.human_move()
                 else:
-                    path = self.computer_move('w')
+                    path = self.computer_move("w")
             else:
                 # computer playing from the side
-                path = self.computer_move('b')
+                path = self.computer_move("b")
+            if path is None:
+                self.count[side] = 0
+                break
             self.move(path, side)
             # channging the side for next move
-            side = 'b' * (side == 'w') + 'w' * (side == 'b')
+            side = "b" * (side == "w") + "w" * (side == "b")
             move_count += 1
             # checking the parity
-            charge = (self.parity['w'][0]
-                      and self.parity['b'][0]) or (self.parity['w'][1]
-                                                   and self.parity['b'][1])
-            # self.print_screen(move_count)
-            time.sleep(self.delay)
-            if self.clear_screen:
-                os.system('clear')
+            charge = (self.parity["w"].get(0, False) and self.parity["b"].get(
+                0, False)) or (self.parity["w"].get(1, False)
+                               and self.parity["b"].get(1, False))
             # printing the board and count
+            # time.sleep(self.delay)
+            # if self.clear_screen:
+            #     os.system("clear")
+            # self.print_screen(move_count)
 
-        if not charge:  # if game draws
-            print('Game draws :( in ', end='')
-            self.stats['draw'] += 1
-        elif self.count['b'] == 0:  # if white wins
-            print('White wins! in ', end='')
-
-            self.stats['win']['w']['avg moves'] = (
-                self.stats['win']['w']['avg moves'] *
-                self.stats['win']['w']['count'] +
-                move_count) / (self.stats['win']['w']['count'] + 1)
-
-            self.stats['win']['w']['count'] += 1
-
+        if not charge or move_count == MAX:  # if game draws
+            print("Game draws :( in ", end="")
+            self.stats["draw"] += 1
+        elif self.count["b"] == 0:  # if white wins
+            move_count = str(move_count)
+            print("White wins! in ", end="")
+            self.stats["w"][move_count] = self.stats["w"].get(move_count,
+                                                              0) + 1
         else:  # if black wins
-            print('Black wins! in ', end='')
+            move_count = str(move_count)
+            print("Black wins! in ", end="")
 
-            self.stats['win']['b']['avg moves'] = (
-                self.stats['win']['b']['avg moves'] *
-                self.stats['win']['b']['count'] +
-                move_count) / (self.stats['win']['b']['count'] + 1)
+            self.stats["b"][move_count] = self.stats["b"].get(move_count,
+                                                              0) + 1
 
-            self.stats['win']['b']['count'] += 1
-
-        print(move_count, 'moves.')
+        print(move_count, "moves.")
 
     def save(self) -> None:
         """save the stats of the game into a file"""
@@ -423,33 +419,42 @@ class Checker:
             file = json.load(file)
 
             # updating the average moves of white
-            file['win']['w']['avg moves'] = (
-                (file['win']['w']['avg moves'] * file['win']['w']['count']) +
-                (self.stats['win']['w']['avg moves'] *
-                 self.stats['win']['w']['count'])
-            ) / (file['win']['w']['count'] + self.stats['win']['w']['count'])
-
+            for m, c in self.stats["w"].items():
+                file["w"][m] = file["w"].get(m, 0) + c
             # updating the average moves of black
-            file['win']['b']['avg moves'] = (
-                (file['win']['b']['avg moves'] * file['win']['b']['count']) +
-                (self.stats['win']['b']['avg moves'] *
-                 self.stats['win']['b']['count'])
-            ) / (file['win']['b']['count'] + self.stats['win']['b']['count'])
-
-            # updating the win count of white and black
-            file['win']['w']['count'] += self.stats['win']['w']['count']
-            file['win']['b']['count'] += self.stats['win']['b']['count']
+            for m, c in self.stats["b"].items():
+                file["b"][m] = file["b"].get(m, 0) + c
 
             # updating the draw count
-            file['draw'] += self.stats['draw']
+            file["draw"] += self.stats["draw"]
 
         # dumping the stats in the file
         with open("game_stats.json", "w") as outfile:
             json.dump(file, outfile)
 
+        A = np.array(list(file["w"].keys()), dtype=int)
+        B = np.array(list(file["b"].keys()), dtype=int)
 
-game = Checker(human=False, clear_screen=False, delay=0.0)
+        start = min(np.min(A), np.min(B))
+        stop = max(np.max(A), np.max(B))
+
+        xrange = range(start, stop + 1)
+
+        white_range = list()
+        black_range = list()
+
+        for x in xrange:
+            white_range.append(file["w"].get(str(x), 0))
+            black_range.append(file["b"].get(str(x), 0))
+        list(xrange)
+        plt.bar(xrange, white_range)
+        plt.bar(xrange, black_range)
+        plt.show()
+
+
+game = Checker(human=False, clear_screen=True, delay=0.1)
+
 for game_no in range(10000):
-    print(game_no, end=' ')
+    print(game_no, end=" ")
     game.start()
 game.save()
