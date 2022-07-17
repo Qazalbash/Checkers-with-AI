@@ -363,9 +363,10 @@ class Checker:
         side = random.choice(["b", "w"])
         # parity to avoid the color segeration
         self.parity = {"w": {0: True, 1: True}, "b": {0: True, 1: True}}
+        # maximum number of moves the game can take
         MAX = 600
 
-        # self.print_screen()
+        self.print_screen()
 
         while self.count["b"] > 0 and self.count[
                 "w"] > 0 and charge and move_count <= MAX:
@@ -390,10 +391,10 @@ class Checker:
                 0, False)) or (self.parity["w"].get(1, False)
                                and self.parity["b"].get(1, False))
             # printing the board and count
-            # time.sleep(self.delay)
-            # if self.clear_screen:
-            #     os.system("clear")
-            # self.print_screen(move_count)
+            time.sleep(self.delay)
+            if self.clear_screen:
+                os.system("clear")
+            self.print_screen(move_count)
 
         if not charge or move_count == MAX:  # if game draws
             print("Game draws :( in ", end="")
@@ -419,18 +420,19 @@ class Checker:
             file = json.load(file)
 
             # updating the average moves of white
-            for m, c in self.stats["w"].items():
-                file["w"][m] = file["w"].get(m, 0) + c
-            # updating the average moves of black
-            for m, c in self.stats["b"].items():
-                file["b"][m] = file["b"].get(m, 0) + c
+            if self.stats != {"w": {}, "b": {}, "draw": {}}:
+                for m, c in self.stats["w"].items():
+                    file["w"][m] = file["w"].get(m, 0) + c
+                # updating the average moves of black
+                for m, c in self.stats["b"].items():
+                    file["b"][m] = file["b"].get(m, 0) + c
 
-            # updating the draw count
-            file["draw"] += self.stats["draw"]
+                # updating the draw count
+                file["draw"] += self.stats["draw"]
 
-        # dumping the stats in the file
-        with open("game_stats.json", "w") as outfile:
-            json.dump(file, outfile)
+            # dumping the stats in the file
+            with open("game_stats.json", "w") as outfile:
+                json.dump(file, outfile)
 
         A = np.array(list(file["w"].keys()), dtype=int)
         B = np.array(list(file["b"].keys()), dtype=int)
@@ -446,15 +448,35 @@ class Checker:
         for x in xrange:
             white_range.append(file["w"].get(str(x), 0))
             black_range.append(file["b"].get(str(x), 0))
-        list(xrange)
-        plt.bar(xrange, white_range)
-        plt.bar(xrange, black_range)
+
+        fig, ax = plt.subplots(1, 2, sharex='col', sharey='row')
+
+        plt.tight_layout()
+
+        ax[0].scatter(xrange,
+                      white_range,
+                      color="blue",
+                      label="white",
+                      marker=".")
+
+        ax[1].scatter(xrange,
+                      black_range,
+                      color="red",
+                      label="black",
+                      marker=".")
+
+        ax[0].set_title("white")
+        ax[0].set_xlabel("moves")
+        ax[0].set_ylabel("count")
+        ax[1].set_title("black")
+        ax[1].set_xlabel("moves")
+        ax[1].set_ylabel("count")
         plt.show()
 
 
 game = Checker(human=False, clear_screen=True, delay=0.1)
 
-for game_no in range(10000):
-    print(game_no, end=" ")
-    game.start()
+# for game_no in range(10000):
+#     print(game_no, end=" ")
+#     game.start()
 game.save()
