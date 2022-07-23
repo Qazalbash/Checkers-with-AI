@@ -1,12 +1,8 @@
-import json
 import os
 import random
 import time
 from itertools import product
 from typing import Optional
-
-import numpy as np
-from matplotlib import pyplot as plt
 
 
 class Checker:
@@ -347,8 +343,12 @@ class Checker:
         self.last_move = move[:-1]
         return move
 
-    def start(self) -> None:
-        """starts the game"""
+    def start(self, MAX: int = 600) -> None:
+        """starts the game
+
+        Args:
+            MAX (int, optional): maximum number of moves the game can take. Defaults to 600.
+        """
         # parity is True right now
         charge = True
         # number of moves are zero
@@ -363,8 +363,6 @@ class Checker:
         side = random.choice(["b", "w"])
         # parity to avoid the color segeration
         self.parity = {"w": {0: True, 1: True}, "b": {0: True, 1: True}}
-        # maximum number of moves the game can take
-        MAX = 600
 
         self.print_screen()
 
@@ -397,25 +395,27 @@ class Checker:
             self.print_screen(move_count)
 
         if not charge or move_count == MAX:  # if game draws
-            print("Game draws :( in ", end="")
+            # print("Game draws :( in ", end="")
             self.stats["draw"] += 1
         elif self.count["b"] == 0:  # if white wins
             move_count = str(move_count)
-            print("White wins! in ", end="")
+            # print("White wins! in ", end="")
             self.stats["w"][move_count] = self.stats["w"].get(move_count,
                                                               0) + 1
         else:  # if black wins
             move_count = str(move_count)
-            print("Black wins! in ", end="")
+            # print("Black wins! in ", end="")
 
             self.stats["b"][move_count] = self.stats["b"].get(move_count,
                                                               0) + 1
 
-        print(move_count, "moves.")
+        # print(move_count, "moves.")
 
-    def save(self) -> None:
+    def save(self, changed: bool = True) -> None:
         """save the stats of the game into a file"""
         # reading the file
+        import json
+
         with open("game_stats.json", "r") as file:
             file = json.load(file)
 
@@ -431,8 +431,13 @@ class Checker:
                 file["draw"] += self.stats["draw"]
 
             # dumping the stats in the file
-            with open("game_stats.json", "w") as outfile:
-                json.dump(file, outfile)
+            if '601' in file['b']:
+                del file["b"]["601"]
+            if changed:
+                with open("game_stats.json", "w") as outfile:
+                    json.dump(file, outfile)
+
+        import numpy as np
 
         A = np.array(list(file["w"].keys()), dtype=int)
         B = np.array(list(file["b"].keys()), dtype=int)
@@ -442,25 +447,27 @@ class Checker:
 
         xrange = range(start, stop + 1)
 
-        white_range = list()
-        black_range = list()
+        white_y_range = list()
+        black_y_range = list()
 
         for x in xrange:
-            white_range.append(file["w"].get(str(x), 0))
-            black_range.append(file["b"].get(str(x), 0))
+            white_y_range.append(file["w"].get(str(x), 0))
+            black_y_range.append(file["b"].get(str(x), 0))
+
+        from matplotlib import pyplot as plt
 
         fig, ax = plt.subplots(1, 2, sharex='col', sharey='row')
 
         plt.tight_layout()
 
         ax[0].scatter(xrange,
-                      white_range,
+                      white_y_range,
                       color="blue",
                       label="white",
                       marker=".")
 
         ax[1].scatter(xrange,
-                      black_range,
+                      black_y_range,
                       color="red",
                       label="black",
                       marker=".")
@@ -475,8 +482,5 @@ class Checker:
 
 
 game = Checker(human=False, clear_screen=True, delay=0.1)
-
-# for game_no in range(10000):
-#     print(game_no, end=" ")
-#     game.start()
+game.start()
 game.save()
