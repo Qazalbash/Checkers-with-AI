@@ -4,9 +4,6 @@
 ![Lines of code](https://img.shields.io/tokei/lines/github/MeesumAliQazalbash/Checkers-with-AI)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/MeesumAliQazalbash/Checkers-with-AI)
 
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/MeesumAliQazalbash/Checkers-with-AI.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/MeesumAliQazalbash/Checkers-with-AI/alerts/)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/MeesumAliQazalbash/Checkers-with-AI.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/MeesumAliQazalbash/Checkers-with-AI/context:python)
-
 ## Description
 
 Checkers was a first project that I made in my first year of university. It has been really close to my heart. In this project I tried to make a game that is not only a game but also a game that is fun to play. The code is completely new from the scratch. The logic is pretty simple and the game is fun to play.
