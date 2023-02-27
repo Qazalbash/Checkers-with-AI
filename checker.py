@@ -54,16 +54,20 @@ class Checker:
 
         Args:
             move_count (int, optional): move number. Defaults to 0."""
-        for i, j in product(range(8), repeat=2):
+        for i,j in product(range(8), repeat=2):
             color = "y" if (i + j) % 2 else "r"  # changing the color
             # if piece was in the last move then its "h" for tiling
             p = "h" if (i, j) in self.last_move else self.piece[(i, j)]
             if p == "o":
                 p = color  # color for empty piece
-            print(self.tile[p], end=None if j == 7 else " ")
+            print(self.tile[p], end= f" {i+1}\n" if j == 7 else " ")
+        print(" ", end="")
+        for i in range(8):
+            print(i+1, end= None if i == 7 else "  ")
         print("\nBlack: ", self.count["b"])
         print("White: ", self.count["w"])
         print("Move:", move_count, end="\n\n")
+
 
     @staticmethod
     def L1_norm(x: tuple[int, int], y: tuple[int, int]) -> int:
