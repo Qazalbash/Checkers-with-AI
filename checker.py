@@ -4,6 +4,8 @@ import time
 from itertools import product
 from typing import Optional
 
+## tada
+
 
 class Checker:
     """class to simulate checkers game where human/computer play against computer"""
